@@ -219,8 +219,9 @@ function fileToPng(file, max = 1024) {
     const url = URL.createObjectURL(file), im = new Image();
     im.onload = () => {
       const s = Math.min(1, max / Math.max(im.width, im.height)), c = document.createElement("canvas");
-      c.width = Math.round(im.width * s); c.height = Math.round(im.height * s);
-      c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+      const w = Math.round(im.width * s), h = Math.round(im.height * s);
+      c.width = c.height = Math.max(w, h); // จัตุรัส ไม่ให้ Roblox ยืดรูปตอนทำ thumbnail
+      c.getContext("2d").drawImage(im, (c.width - w) / 2, (c.height - h) / 2, w, h);
       URL.revokeObjectURL(url); res(c.toDataURL("image/png").split(",")[1]);
     };
     im.onerror = () => rej(new Error("เปิดไฟล์รูปไม่ได้"));
