@@ -262,7 +262,7 @@ function renderForm() {
     h("label", {}, "รูปโจทย์ (ถ้ามี)"),
     slot(() => form.image, (v) => { form.image = v; }),
     h("label", {}, "ตัวเลือก 5 ข้อ (ติ๊กวงกลมข้อที่ถูก) — แต่ละข้อใส่ข้อความ รูป หรือทั้งสองอย่างก็ได้"),
-    form.choices.map((c, i) => h("div", { class: "choice" },
+    ...form.choices.map((c, i) => h("div", { class: "choice" },
       h("input", { type: "radio", name: "ans", checked: form.answer === i + 1, onchange: () => { form.answer = i + 1; }, title: `ข้อ ${i + 1} ถูก` }),
       h("div", {},
         h("input", { type: "text", maxLength: MAX_TEXT, placeholder: `ตัวเลือก ${i + 1}`, value: c.text, oninput: (e) => { c.text = e.target.value; } }),
