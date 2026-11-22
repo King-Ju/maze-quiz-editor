@@ -30,7 +30,7 @@ label{display:block;font-size:14px;color:var(--mut);margin:10px 0 4px}
 .item.sel{border-color:var(--pri)}
 .choice{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:start;padding:8px 0;border-top:1px solid var(--line)}
 .slot{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:14px;color:var(--mut)}
-.slot img{max-height:56px;border-radius:6px;border:1px solid var(--line)}
+.slot img{max-height:96px;border-radius:6px;border:1px solid var(--line)}
 #status{padding:8px 16px;font-size:14px;min-height:36px}
 .ok{color:var(--ok)}.warn{color:var(--warn)}.err{color:var(--bad)}
 .hide{display:none!important}
@@ -95,6 +95,7 @@ let data = [];            // โจทย์ทั้งหมด
 let sha = null;           // sha ของ questions.json
 let assets = {};          // images/x.png -> assetId
 const pending = {};       // images/x.png -> base64 (ยังไม่ commit)
+const imgCache = {};      // images/x.png -> data URL ที่ดึงจาก repo
 let dirty = false;
 let editing = null;       // null | -1 (ใหม่) | index
 let form = null;
@@ -234,6 +235,13 @@ function slot(get, set) {
     wrap.replaceChildren();
     const v = get();
     if (v && v in pending) wrap.append(h("img", { src: "data:image/png;base64," + pending[v], alt: "ตัวอย่างรูป" }));
+    else if (v && v.startsWith("images/")) {
+      const im = h("img", { alt: "ตัวอย่างรูป" });
+      if (imgCache[v]) im.src = imgCache[v];
+      else gh("GET", v).then((j) => { im.src = imgCache[v] = "data:image/png;base64," + j.content.replace(/\s/g, ""); })
+        .catch(() => im.replaceWith(h("span", {}, "โหลดตัวอย่างไม่ได้")));
+      wrap.append(im);
+    }
     wrap.append(h("span", {}, v ? `รูป: ${v.startsWith("rbxassetid://") ? v : v.slice(7)} ${imgState(v)}` : "ไม่มีรูป"));
     const file = h("input", { type: "file", accept: "image/*", class: "hide", onchange: async () => {
       if (!file.files[0]) return;
