@@ -138,13 +138,15 @@ async function load() {
 }
 
 async function save() {
+  if (form && !apply()) return; // ใช้โจทย์ที่เปิดอยู่ให้อัตโนมัติ ไม่ต้องกด "ใช้โจทย์นี้" ก่อน
   const bad = data.map((q) => [key(q), validate(q)]).find(([, m]) => m);
   if (bad) return status(`บันทึกไม่ได้ ข้อ ${bad[0]}: ${bad[1]}`, "err");
   const btn = $("#bSave"); btn.disabled = true;
   try {
     status("กำลังบันทึก…");
+    const used = new Set(data.flatMap((q) => [q.image, ...q.choices.map((c) => c.image)]));
     for (const [path, b64] of Object.entries(pending)) {
-      await gh("PUT", path, { message: "add image", content: b64 });
+      if (used.has(path)) await gh("PUT", path, { message: "add image", content: b64 }); // รูปที่ไม่ได้ใช้ ไม่อัป
       delete pending[path];
     }
     data.sort((a, b) => String(a.set).localeCompare(String(b.set), "th", { numeric: true }) || a.num - b.num);
@@ -279,7 +281,7 @@ function renderForm() {
       h("button", { class: "pri", onclick: apply }, "ใช้โจทย์นี้"),
       editing >= 0 ? h("button", { class: "bad", onclick: remove }, "ลบโจทย์") : null,
       h("button", { onclick: () => { editing = null; form = null; renderForm(); renderList(); } }, "ปิด")),
-    h("p", { class: "note" }, "“ใช้โจทย์นี้” แก้ในหน้านี้ก่อน ต้องกด “บันทึกขึ้น GitHub” ด้านบนเพื่อส่งขึ้นรีโป"));
+    h("p", { class: "note" }, "กด “บันทึกขึ้น GitHub” ด้านบนได้เลย ระบบใช้โจทย์ที่เปิดอยู่ให้อัตโนมัติ"));
 }
 
 function clean(q) {
@@ -289,11 +291,12 @@ function clean(q) {
 }
 function apply() {
   const q = clean(form), m = validate(q);
-  if (m) return status(m, "err");
+  if (m) { status(m, "err"); return false; }
   const dup = data.findIndex((x, i) => key(x) === key(q) && i !== editing);
-  if (dup >= 0) return status(`มีข้อ ${key(q)} อยู่แล้ว เปลี่ยนเลขข้อ`, "err");
+  if (dup >= 0) { status(`มีข้อ ${key(q)} อยู่แล้ว เปลี่ยนเลขข้อ`, "err"); return false; }
   if (editing >= 0) data[editing] = q; else { data.push(q); editing = data.length - 1; }
   markDirty(); status("แก้ในหน้านี้แล้ว อย่าลืมกด “บันทึกขึ้น GitHub”", "warn");
+  return true;
 }
 function remove() {
   if (!confirm(`ลบข้อ ${key(data[editing])} ?`)) return;
